@@ -672,6 +672,66 @@ def export_to_pdf(output_path: str) -> str:
         logger.error(f"PDF 내보내기 실패: {e}")
         return f"PDF 내보내기 실패: {e}"
 
+def replace_document_text(
+    input_path: str, output_path: str, replacements: Dict[str, str]
+) -> str:
+    """[Experimental] 기존 HWP 파일의 문자열을 일괄 치환해 별도 파일로 저장합니다.
+
+    원본 파일을 변경하지 않습니다. 표 셀 전용 API와 자동 롤백은 아직 지원하지 않습니다.
+    Windows/한글 실사용 검증은 별도 진행 중입니다.
+    """
+    try:
+        from hwp_unified.workflow import run_replace_job
+
+        result = run_replace_job(input_path, output_path, replacements)
+        return f"새 HWP 파일을 저장했습니다: {result} (문서 내용 실기 재확인 권장)"
+    except Exception as exc:
+        logger.error("HWP 일괄 치환 실패: %s", exc)
+        return f"HWP 일괄 치환 실패: {exc}"
+
+
+def convert_pdf_to_html(
+    pdf_path: str, output_dir: str, mode: str = "editable"
+) -> str:
+    """[Experimental] 텍스트 기반 PDF를 HTML로 변환합니다.
+
+    mode=editable 또는 faithful. OCR·표·이미지 정밀 재현은 미지원입니다.
+    """
+    try:
+        from hwp_unified.conversion import pdf_to_html
+
+        result = pdf_to_html(pdf_path, output_dir, mode)
+        return f"PDF 텍스트 HTML 생성 완료: {result} (표/이미지/서식 보존은 미지원)"
+    except Exception as exc:
+        logger.error("PDF→HTML 변환 실패: %s", exc)
+        return f"PDF→HTML 변환 실패: {exc}"
+
+
+def convert_hwp_to_html(
+    hwp_path: str, output_dir: str, mode: str = "editable"
+) -> str:
+    """[Experimental] 별도 한글 인스턴스에서 HWP→PDF→텍스트 HTML로 변환합니다.
+
+    Windows/한글/PyMuPDF 필요. 원본 보존·출력 덮어쓰기 금지.
+    """
+    try:
+        from hwp_unified.conversion import hwp_to_html
+
+        result = hwp_to_html(hwp_path, output_dir, mode)
+        return f"HWP 텍스트 HTML 생성 완료: {result} (실제 HWP/레이아웃 재검증 필요)"
+    except Exception as exc:
+        logger.error("HWP→HTML 변환 실패: %s", exc)
+        return f"HWP→HTML 변환 실패: {exc}"
+
+
+# Real Windows/Hangul integration is not yet reliable. Experimental tools
+# must be explicitly enabled; default tool discovery remains unchanged.
+if os.environ.get("HWP_MCP_ENABLE_EXPERIMENTAL") == "1":
+    mcp.tool()(replace_document_text)
+    mcp.tool()(convert_pdf_to_html)
+    mcp.tool()(convert_hwp_to_html)
+
+
 def main():
     """메인 함수"""
     try:
