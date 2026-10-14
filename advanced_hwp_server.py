@@ -7,6 +7,7 @@ Advanced HWP MCP Server
 import logging
 import sys
 import os
+import threading
 from typing import Optional, Dict, Any, List, Tuple
 import json
 
@@ -17,19 +18,17 @@ try:
     import win32api
     import win32con
 except ImportError as e:
-    print(f"필수 패키지가 설치되지 않음: {e}")
-    print("다음 명령어로 패키지를 설치하세요:")
-    print("pip install mcp fastmcp pywin32")
+    print(f"필수 패키지가 설치되지 않음: {e}", file=sys.stderr)
+    print("다음 명령어로 패키지를 설치하세요:", file=sys.stderr)
+    print("pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
-# 로깅 설정
+# MCP stdio is a protocol channel: diagnostics go to stderr only.
+# Never create a log file in the client's arbitrary working directory on import.
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('hwp_mcp.log'),
-        logging.StreamHandler()
-    ]
+    stream=sys.stderr,
 )
 logger = logging.getLogger(__name__)
 
@@ -40,48 +39,79 @@ class AdvancedHwpController:
     """고급 한글 컨트롤러 클래스"""
     
     def __init__(self):
-        """한글 COM 객체 초기화"""
+        """한글 COM 객체 및 이 객체를 소유하는 스레드 추적"""
         self.hwp = None
         self.is_initialized = False
         self.current_document = None
-        
+        self._com_owner_thread_id = None
+
     def initialize(self):
-        """한글 COM 객체 초기화"""
+        """한글 COM 초기화: 동일 스레드에서 한 번만 수행."""
+        if self.is_initialized:
+            if self._com_owner_thread_id != threading.get_ident():
+                logger.error("한글 COM thread mismatch: 다른 스레드에서 재사용할 수 없습니다.")
+                return False
+            return True
+
+        com_initialized = False
+        hwp = None
         try:
             pythoncom.CoInitialize()
-            
-            # 한글 프로그램이 설치되어 있는지 확인
+            com_initialized = True
+
+            # 먼저 gencache를 시도하고, 실패할 때만 Dispatch로 대체한다.
             try:
-                self.hwp = win32com.client.gencache.EnsureDispatch("HWPFrame.HwpObject")
-            except:
-                # gencache가 실패하면 일반 Dispatch 사용
-                self.hwp = win32com.client.Dispatch("HWPFrame.HwpObject")
-            
-            # 한글 창을 보이게 설정
-            if self.hwp.XHwpWindows.Count > 0:
-                self.hwp.XHwpWindows.Item(0).Visible = True
-            
+                hwp = win32com.client.gencache.EnsureDispatch("HWPFrame.HwpObject")
+            except Exception:
+                hwp = win32com.client.Dispatch("HWPFrame.HwpObject")
+
+            # 객체가 유효하고 창 제어까지 끝난 후 상태를 확정한다.
+            if hwp.XHwpWindows.Count > 0:
+                hwp.XHwpWindows.Item(0).Visible = True
+
+            self.hwp = hwp
+            self._com_owner_thread_id = threading.get_ident()
             self.is_initialized = True
             logger.info("한글 COM 객체 초기화 완료")
             return True
-            
-        except Exception as e:
-            logger.error(f"한글 COM 객체 초기화 실패: {e}")
+        except Exception as exc:
+            self.hwp = None
+            hwp = None  # COM 프록시 참조를 CoUninitialize 전에 해제
+            self._com_owner_thread_id = None
+            self.is_initialized = False
+            if com_initialized:
+                # 실패한 CoInitialize는 반드시 같은 스레드에서 해제한다.
+                try:
+                    pythoncom.CoUninitialize()
+                except Exception as cleanup_exc:
+                    logger.warning("한글 COM 정리 실패: %s", cleanup_exc)
+            logger.error("한글 COM 객체 초기화 실패: %s", exc)
             return False
-    
-    def __del__(self):
-        """리소스 정리"""
-        try:
-            if self.is_initialized:
-                pythoncom.CoUninitialize()
-        except:
-            pass
-    
-    def check_initialization(self):
-        """초기화 상태 확인"""
+
+    def close(self):
+        """명시적 종료. 최초 초기화한 스레드에서만 COM을 해제한다.
+
+        Dispatch는 사용자가 실행한 한글에 연결될 수 있으므로 Quit을
+        호출하지 않는다. __del__은 실행 스레드가 불확실하여 사용하지 않는다.
+        """
         if not self.is_initialized:
-            if not self.initialize():
-                raise Exception("한글 프로그램이 설치되지 않았거나 초기화할 수 없습니다.")
+            return False
+        if self._com_owner_thread_id != threading.get_ident():
+            raise RuntimeError("HWP COM thread mismatch: cannot release from another thread")
+
+        self.hwp = None
+        self.current_document = None
+        self.is_initialized = False
+        self._com_owner_thread_id = None
+        pythoncom.CoUninitialize()
+        return True
+
+    def check_initialization(self):
+        """초기화 여부 및 Windows COM 스레드 소유권 확인."""
+        if self.is_initialized and self._com_owner_thread_id != threading.get_ident():
+            raise RuntimeError("HWP COM thread mismatch: cannot use from another thread")
+        if not self.is_initialized and not self.initialize():
+            raise RuntimeError("한글 프로그램이 설치되지 않았거나 초기화할 수 없습니다.")
         return True
 
 # 전역 컨트롤러 인스턴스
@@ -105,8 +135,9 @@ def create_document() -> str:
     try:
         hwp_controller.check_initialization()
         
-        # 새 문서 생성
-        hwp_controller.hwp.HAction.Run("FileNew")
+        # COM returns False on failure; do not report a new document otherwise.
+        if not hwp_controller.hwp.HAction.Run("FileNew"):
+            return "문서 생성 실패: 한글 FileNew 명령이 실패했습니다."
         hwp_controller.current_document = "new_document"
         
         logger.info("새 문서 생성 완료")
@@ -120,17 +151,18 @@ def create_document() -> str:
 def open_document(file_path: str) -> str:
     """지정된 경로의 한글 문서를 엽니다."""
     try:
-        hwp_controller.check_initialization()
-        
-        if not os.path.exists(file_path):
+        # Reject missing/unreadable paths before launching Hangul.
+        if not os.path.isfile(file_path):
             return f"파일을 찾을 수 없습니다: {file_path}"
-        
-        # 문서 열기
+        hwp_controller.check_initialization()
+
+        # A successful Execute return is required before claiming an open.
         act = hwp_controller.hwp.CreateAction("FileOpen")
         pset = act.CreateSet()
         pset.SetItem("filename", file_path)
-        act.Execute(pset)
-        
+        if not act.Execute(pset):
+            return f"문서 열기 실패: 한글 FileOpen 명령이 실패했습니다: {file_path}"
+
         hwp_controller.current_document = file_path
         logger.info(f"문서 열기 완료: {file_path}")
         return f"문서를 열었습니다: {file_path}"
@@ -141,29 +173,44 @@ def open_document(file_path: str) -> str:
 
 @mcp.tool()
 def save_document(file_path: Optional[str] = None) -> str:
-    """현재 문서를 저장합니다."""
+    """현재 문서를 저장합니다. 새 문서는 저장할 파일 경로를 지정해야 합니다."""
     try:
         hwp_controller.check_initialization()
-        
+
         if file_path:
-            # 다른 이름으로 저장
-            act = hwp_controller.hwp.CreateAction("FileSaveAs")
-            pset = act.CreateSet()
-            pset.SetItem("filename", file_path)
-            pset.SetItem("format", "HWP")
-            act.Execute(pset)
-            
-            hwp_controller.current_document = file_path
-            logger.info(f"문서 저장 완료: {file_path}")
-            return f"문서를 저장했습니다: {file_path}"
-        else:
-            # 현재 문서 저장
-            hwp_controller.hwp.HAction.Run("FileSave")
-            logger.info("문서 저장 완료")
-            return "문서를 저장했습니다."
-            
+            target = os.path.abspath(os.path.expanduser(file_path))
+            parent = os.path.dirname(target)
+            if not os.path.isdir(parent):
+                return f"문서 저장 실패: 대상 폴더가 존재하지 않습니다: {parent}"
+
+            # 공식 HwpObject COM API의 SaveAs를 사용한다.
+            # 성공 반환값뿐 아니라 디스크의 결과 파일까지 확인한다.
+            result = hwp_controller.hwp.SaveAs(target, "HWP", "")
+            if not result:
+                return f"문서 저장 실패: 한글 SaveAs가 실패를 반환했습니다: {target}"
+            if not os.path.isfile(target) or os.path.getsize(target) == 0:
+                return f"문서 저장 실패: 저장된 파일을 확인할 수 없습니다: {target}"
+
+            hwp_controller.current_document = target
+            logger.info("문서 저장 완료: %s", target)
+            return f"문서를 저장했습니다: {target}"
+
+        if hwp_controller.current_document in (None, "new_document"):
+            return "문서 저장 실패: 새 문서는 file_path에 저장할 .hwp 전체 경로를 지정해주세요."
+
+        result = hwp_controller.hwp.HAction.Run("FileSave")
+        if not result:
+            return "문서 저장 실패: 한글 FileSave가 실패를 반환했습니다."
+
+        target = hwp_controller.current_document
+        if not os.path.isfile(target) or os.path.getsize(target) == 0:
+            return f"문서 저장 실패: 저장된 파일을 확인할 수 없습니다: {target}"
+
+        logger.info("문서 저장 완료: %s", target)
+        return f"문서를 저장했습니다: {target}"
+
     except Exception as e:
-        logger.error(f"문서 저장 실패: {e}")
+        logger.error("문서 저장 실패: %s", e)
         return f"문서 저장 실패: {e}"
 
 @mcp.tool()
@@ -657,22 +704,92 @@ def export_to_pdf(output_path: str) -> str:
         logger.error(f"PDF 내보내기 실패: {e}")
         return f"PDF 내보내기 실패: {e}"
 
+def replace_document_text(
+    input_path: str, output_path: str, replacements: Dict[str, str]
+) -> str:
+    """[Experimental] 기존 HWP 파일의 문자열을 일괄 치환해 별도 파일로 저장합니다.
+
+    원본 파일을 변경하지 않습니다. 표 셀 전용 API와 자동 롤백은 아직 지원하지 않습니다.
+    Windows/한글 실사용 검증은 별도 진행 중입니다.
+    """
+    try:
+        from hwp_unified.worker import invoke_hwp_worker
+
+        result = invoke_hwp_worker(
+            "replace", source=input_path, destination=output_path,
+            replacements=replacements
+        )
+        return f"새 HWP 파일을 저장했습니다: {result} (문서 내용 실기 재확인 권장)"
+    except Exception as exc:
+        logger.error("HWP 일괄 치환 실패: %s", exc)
+        return f"HWP 일괄 치환 실패: {exc}"
+
+
+def convert_pdf_to_html(
+    pdf_path: str, output_dir: str, mode: str = "editable"
+) -> str:
+    """[Experimental] 텍스트 기반 PDF를 HTML로 변환합니다.
+
+    mode=editable 또는 faithful. OCR·표·이미지 정밀 재현은 미지원입니다.
+    """
+    try:
+        from hwp_unified.conversion import pdf_to_html
+
+        result = pdf_to_html(pdf_path, output_dir, mode)
+        return f"PDF 텍스트 HTML 생성 완료: {result} (표/이미지/서식 보존은 미지원)"
+    except Exception as exc:
+        logger.error("PDF→HTML 변환 실패: %s", exc)
+        return f"PDF→HTML 변환 실패: {exc}"
+
+
+def convert_hwp_to_html(
+    hwp_path: str, output_dir: str, mode: str = "editable"
+) -> str:
+    """[Experimental] 별도 한글 인스턴스에서 HWP→PDF→텍스트 HTML로 변환합니다.
+
+    Windows/한글/PyMuPDF 필요. 원본 보존·출력 덮어쓰기 금지.
+    """
+    try:
+        from hwp_unified.worker import invoke_hwp_worker
+
+        result = invoke_hwp_worker(
+            "hwp_to_html", source=hwp_path, output_dir=output_dir, mode=mode
+        )
+        return f"HWP 텍스트 HTML 생성 완료: {result} (실제 HWP/레이아웃 재검증 필요)"
+    except Exception as exc:
+        logger.error("HWP→HTML 변환 실패: %s", exc)
+        return f"HWP→HTML 변환 실패: {exc}"
+
+
+# Real Windows/Hangul integration is not yet reliable. Experimental tools
+# must be explicitly enabled; default tool discovery remains unchanged.
+if os.environ.get("HWP_MCP_ENABLE_EXPERIMENTAL") == "1":
+    mcp.tool()(replace_document_text)
+    mcp.tool()(convert_pdf_to_html)
+    mcp.tool()(convert_hwp_to_html)
+
+
 def main():
     """메인 함수"""
     try:
         logger.info("Advanced HWP MCP Server 시작")
         
-        # 한글 프로그램 초기화
-        if not hwp_controller.initialize():
-            logger.error("한글 프로그램 초기화 실패")
-            return
-        
+        # 연결만으로 한글을 실행하지 않는다.
+        # 실제 도구가 호출되면 check_initialization()에서 지연 초기화한다.
         # MCP 서버 실행
         mcp.run()
         
     except Exception as e:
         logger.error(f"서버 실행 중 오류: {e}")
         sys.exit(1)
+    finally:
+        # COM must only be torn down by its initializing thread.
+        # If the MCP runtime used another thread, never release it here.
+        if hwp_controller.is_initialized:
+            if hwp_controller._com_owner_thread_id == threading.get_ident():
+                hwp_controller.close()
+            else:
+                logger.warning("HWP COM belongs to another thread; skipping unsafe teardown")
 
 if __name__ == "__main__":
     main()

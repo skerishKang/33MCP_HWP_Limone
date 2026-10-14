@@ -60,6 +60,24 @@ Claude Desktop / Gemini CLI / 검증된 기타 MCP 클라이언트
 - 35: HWP→PDF→HTML / PDF→HTML 변환; 스캔 문서 OCR은 선택 기능
 - 템플릿 기반 공문·보고서·계약서 작성, 여러 문서 일괄 작업, 변경 전후 비교
 
+## 실험 기능 개발 현황 (Draft PR #2, 기본 비활성)
+
+로컬 34·35의 설계를 참고하여 기능을 **작동 가능한 작은 단위부터** 개발하고 있습니다. 아직 안정 릴리스가 아닙니다.
+
+- `replace_document_text(input_path, output_path, replacements)`: 기존 HWP에서 문자열을 찾아 다른 새 HWP로 저장하는 일괄 처리 프로토타입. 원본 덮어쓰기 금지, 텍스트 전후 확인 시도. **실제 Windows/HWP 실기 테스트에서 아직 실패 중**입니다.
+- `convert_pdf_to_html(pdf_path, output_dir, mode="editable")`: 텍스트 기반 PDF에서 실제 텍스트를 추출해 HTML 작성. 합성 PDF로 성공 확인. `mode`는 `editable` 또는 `faithful`(대략적인 배치)입니다. OCR·표/이미지·폰트의 정밀 보존은 불가합니다.
+- `convert_hwp_to_html(hwp_path, output_dir, mode="editable")`: HWP→PDF→HTML 변환 경로. **HWP COM 실기 검증 실패/미완료**, 현재는 모의 COM 경로만 테스트했습니다.
+
+위 세 도구는 **`HWP_MCP_ENABLE_EXPERIMENTAL=1`을 명시적으로 설정한 경우에만 MCP 도구 목록에 등록**됩니다. 기본 설치로는 노출되지 않습니다. 새로운 HWP COM 작업은 별도 Python 작업 프로세스에서 실행해 충돌이 발생해도 MCP 서버가 종료되지 않도록 격리합니다. **COM 오류 자체가 해결된 것은 아니므로**, 새 HWP 기능의 실험은 별도 테스트 PC에서만 권장합니다.
+
+PDF 추출 라이브러리는 선택 설치합니다.
+
+```powershell
+py -m pip install -r requirements-convert.txt
+```
+
+개발 내용·성공/실패 검증 기록: [PHASE1_DEV_STATUS](docs/PHASE1_DEV_STATUS.md).
+
 ## 설치와 사용
 
 현재 기본 브랜치의 `requirements.txt`에는 별도 설치 대상이 아닌 `pythoncom`이 포함되어 있으며, 설치 가이드의 일부 복사 예제에는 과거 PC 경로가 있습니다. **그대로 실행하는 설치 가이드를 정상 작동한다고 보증하지 않습니다.** 해당 보완은 [Draft PR #2](https://github.com/skerishKang/33MCP_HWP_Limone/pull/2)에 있습니다.
