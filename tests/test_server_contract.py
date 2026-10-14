@@ -94,6 +94,97 @@ class ServerContractTests(unittest.TestCase):
         self.assertIn("convert_pdf_to_html", server.mcp.registered_tools)
         self.assertIn("convert_hwp_to_html", server.mcp.registered_tools)
 
+    def test_com_initialization_failure_balances_thread_apartment(self):
+        controller = self.server.AdvancedHwpController()
+        self.client.gencache.EnsureDispatch.side_effect = RuntimeError("no COM")
+        self.client.Dispatch.side_effect = RuntimeError("fallback unavailable")
+        with mock.patch.object(self.server.pythoncom, "CoInitialize") as coinit, mock.patch.object(
+            self.server.pythoncom, "CoUninitialize"
+        ) as couninit:
+            self.assertFalse(controller.initialize())
+            coinit.assert_called_once()
+            couninit.assert_called_once()
+            self.assertIsNone(controller.hwp)
+            self.assertFalse(controller.is_initialized)
+            self.assertIsNone(controller._com_owner_thread_id)
+
+    def test_failed_visibility_setup_releases_com_apartment(self):
+        controller = self.server.AdvancedHwpController()
+        hwp = mock.Mock()
+        hwp.XHwpWindows.Count = 1
+        hwp.XHwpWindows.Item.side_effect = RuntimeError("window COM failed")
+        self.client.gencache.EnsureDispatch.return_value = hwp
+        with mock.patch.object(self.server.pythoncom, "CoInitialize") as coinit, mock.patch.object(
+            self.server.pythoncom, "CoUninitialize"
+        ) as couninit:
+            self.assertFalse(controller.initialize())
+            coinit.assert_called_once()
+            couninit.assert_called_once()
+            self.assertFalse(controller.is_initialized)
+            self.assertIsNone(controller.hwp)
+
+    def test_coinitialize_failure_must_not_call_couninitialize(self):
+        controller = self.server.AdvancedHwpController()
+        with mock.patch.object(
+            self.server.pythoncom, "CoInitialize", side_effect=RuntimeError("apartment unavailable")
+        ), mock.patch.object(self.server.pythoncom, "CoUninitialize") as couninit:
+            self.assertFalse(controller.initialize())
+            couninit.assert_not_called()
+            self.client.gencache.EnsureDispatch.assert_not_called()
+
+    def test_com_initialization_is_idempotent_and_close_balances_once(self):
+        controller = self.server.AdvancedHwpController()
+        hwp = mock.Mock()
+        hwp.XHwpWindows.Count = 0
+        self.client.gencache.EnsureDispatch.return_value = hwp
+        with mock.patch.object(self.server.pythoncom, "CoInitialize") as coinit, mock.patch.object(
+            self.server.pythoncom, "CoUninitialize"
+        ) as couninit:
+            self.assertTrue(controller.initialize())
+            self.assertTrue(controller.initialize())
+            coinit.assert_called_once()
+            self.assertIs(controller.hwp, hwp)
+            self.assertTrue(controller.close())
+            self.assertFalse(controller.close())
+            couninit.assert_called_once()
+            self.assertFalse(controller.is_initialized)
+
+    def test_wrong_thread_cannot_reuse_or_uninitialize_com(self):
+        controller = self.server.AdvancedHwpController()
+        hwp = mock.Mock()
+        hwp.XHwpWindows.Count = 0
+        self.client.gencache.EnsureDispatch.return_value = hwp
+        with mock.patch.object(self.server.pythoncom, "CoInitialize") as coinit, mock.patch.object(
+            self.server.pythoncom, "CoUninitialize"
+        ) as couninit:
+            self.assertTrue(controller.initialize())
+            with mock.patch.object(
+                self.server.threading, "get_ident",
+                return_value=controller._com_owner_thread_id + 100,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "COM thread"):
+                    controller.check_initialization()
+                with self.assertRaisesRegex(RuntimeError, "COM thread"):
+                    controller.close()
+            self.assertEqual(coinit.call_count, 1)
+            couninit.assert_not_called()
+            self.assertTrue(controller.close())
+            couninit.assert_called_once()
+
+    def test_server_shutdown_releases_same_thread_com_once(self):
+        hwp = mock.Mock()
+        hwp.XHwpWindows.Count = 0
+        self.client.gencache.EnsureDispatch.return_value = hwp
+        with mock.patch.object(self.server.pythoncom, "CoInitialize") as coinit, mock.patch.object(
+            self.server.pythoncom, "CoUninitialize"
+        ) as couninit, mock.patch.object(self.server.mcp, "run") as run:
+            self.assertTrue(self.controller.initialize())
+            self.server.main()
+            run.assert_called_once()
+            coinit.assert_called_once()
+            couninit.assert_called_once()
+            self.assertFalse(self.controller.is_initialized)
+
     def test_import_does_not_open_log_file_in_unwritable_client_directory(self):
         # MCP clients may launch the script with an arbitrary working directory.
         # Import must not attempt to create a default log file.

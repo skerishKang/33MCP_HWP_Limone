@@ -7,6 +7,7 @@ Advanced HWP MCP Server
 import logging
 import sys
 import os
+import threading
 from typing import Optional, Dict, Any, List, Tuple
 import json
 
@@ -38,48 +39,79 @@ class AdvancedHwpController:
     """고급 한글 컨트롤러 클래스"""
     
     def __init__(self):
-        """한글 COM 객체 초기화"""
+        """한글 COM 객체 및 이 객체를 소유하는 스레드 추적"""
         self.hwp = None
         self.is_initialized = False
         self.current_document = None
-        
+        self._com_owner_thread_id = None
+
     def initialize(self):
-        """한글 COM 객체 초기화"""
+        """한글 COM 초기화: 동일 스레드에서 한 번만 수행."""
+        if self.is_initialized:
+            if self._com_owner_thread_id != threading.get_ident():
+                logger.error("한글 COM thread mismatch: 다른 스레드에서 재사용할 수 없습니다.")
+                return False
+            return True
+
+        com_initialized = False
+        hwp = None
         try:
             pythoncom.CoInitialize()
-            
-            # 한글 프로그램이 설치되어 있는지 확인
+            com_initialized = True
+
+            # 먼저 gencache를 시도하고, 실패할 때만 Dispatch로 대체한다.
             try:
-                self.hwp = win32com.client.gencache.EnsureDispatch("HWPFrame.HwpObject")
-            except:
-                # gencache가 실패하면 일반 Dispatch 사용
-                self.hwp = win32com.client.Dispatch("HWPFrame.HwpObject")
-            
-            # 한글 창을 보이게 설정
-            if self.hwp.XHwpWindows.Count > 0:
-                self.hwp.XHwpWindows.Item(0).Visible = True
-            
+                hwp = win32com.client.gencache.EnsureDispatch("HWPFrame.HwpObject")
+            except Exception:
+                hwp = win32com.client.Dispatch("HWPFrame.HwpObject")
+
+            # 객체가 유효하고 창 제어까지 끝난 후 상태를 확정한다.
+            if hwp.XHwpWindows.Count > 0:
+                hwp.XHwpWindows.Item(0).Visible = True
+
+            self.hwp = hwp
+            self._com_owner_thread_id = threading.get_ident()
             self.is_initialized = True
             logger.info("한글 COM 객체 초기화 완료")
             return True
-            
-        except Exception as e:
-            logger.error(f"한글 COM 객체 초기화 실패: {e}")
+        except Exception as exc:
+            self.hwp = None
+            hwp = None  # COM 프록시 참조를 CoUninitialize 전에 해제
+            self._com_owner_thread_id = None
+            self.is_initialized = False
+            if com_initialized:
+                # 실패한 CoInitialize는 반드시 같은 스레드에서 해제한다.
+                try:
+                    pythoncom.CoUninitialize()
+                except Exception as cleanup_exc:
+                    logger.warning("한글 COM 정리 실패: %s", cleanup_exc)
+            logger.error("한글 COM 객체 초기화 실패: %s", exc)
             return False
-    
-    def __del__(self):
-        """리소스 정리"""
-        try:
-            if self.is_initialized:
-                pythoncom.CoUninitialize()
-        except:
-            pass
-    
-    def check_initialization(self):
-        """초기화 상태 확인"""
+
+    def close(self):
+        """명시적 종료. 최초 초기화한 스레드에서만 COM을 해제한다.
+
+        Dispatch는 사용자가 실행한 한글에 연결될 수 있으므로 Quit을
+        호출하지 않는다. __del__은 실행 스레드가 불확실하여 사용하지 않는다.
+        """
         if not self.is_initialized:
-            if not self.initialize():
-                raise Exception("한글 프로그램이 설치되지 않았거나 초기화할 수 없습니다.")
+            return False
+        if self._com_owner_thread_id != threading.get_ident():
+            raise RuntimeError("HWP COM thread mismatch: cannot release from another thread")
+
+        self.hwp = None
+        self.current_document = None
+        self.is_initialized = False
+        self._com_owner_thread_id = None
+        pythoncom.CoUninitialize()
+        return True
+
+    def check_initialization(self):
+        """초기화 여부 및 Windows COM 스레드 소유권 확인."""
+        if self.is_initialized and self._com_owner_thread_id != threading.get_ident():
+            raise RuntimeError("HWP COM thread mismatch: cannot use from another thread")
+        if not self.is_initialized and not self.initialize():
+            raise RuntimeError("한글 프로그램이 설치되지 않았거나 초기화할 수 없습니다.")
         return True
 
 # 전역 컨트롤러 인스턴스
@@ -750,6 +782,14 @@ def main():
     except Exception as e:
         logger.error(f"서버 실행 중 오류: {e}")
         sys.exit(1)
+    finally:
+        # COM must only be torn down by its initializing thread.
+        # If the MCP runtime used another thread, never release it here.
+        if hwp_controller.is_initialized:
+            if hwp_controller._com_owner_thread_id == threading.get_ident():
+                hwp_controller.close()
+            else:
+                logger.warning("HWP COM belongs to another thread; skipping unsafe teardown")
 
 if __name__ == "__main__":
     main()
