@@ -23,6 +23,7 @@ MANIFEST
 
 # Virtual Environment
 hwp_mcp_env/
+.venv/
 venv/
 env/
 ENV/
@@ -55,3 +56,8 @@ test_document.hwp
 *.md
 !README.md
 !INSTALLATION_GUIDE.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+!SECURITY.md
+!docs/
+!docs/OSS_REVIVAL_PLAN.md
