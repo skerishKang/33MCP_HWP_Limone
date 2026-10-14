@@ -2,7 +2,22 @@
 
 > AI 에이전트가 **한컴오피스 한글(HWP)** 문서를 생성·편집·저장하도록 연결하는 MCP(Model Context Protocol) 도구입니다.
 >
-> *A Model Context Protocol server for controlling Korean Hangul (HWP) documents. The project is being expanded toward workflow automation and format conversion.*
+> *A Model Context Protocol server for controlling Korean Hangul (HWP) documents. Workflow automation and format conversion are experimental directions, currently under viability review.*
+
+## 방향 재검토 — 2026-10-15
+
+**현재 결정: 사용자 문제 해결과 OSS 경쟁력 검증이 먼저이며, 로컬 33·34·35의 대규모 통합 개발은 잠정 보류합니다.**
+
+이 저장소를 폐기하거나 새 저장소로 이동하는 결정은 아닙니다. 기존 사용자 [#1](https://github.com/skerishKang/33MCP_HWP_Limone/issues/1)의 자동 실행·저장 문제, Windows COM 안정성, 타 도구 대비 실제 장점을 먼저 확인하겠습니다.
+
+- **ACTIVE:** [#5 기존 사용자 오류](https://github.com/skerishKang/33MCP_HWP_Limone/issues/5), [#11 Windows 실기](https://github.com/skerishKang/33MCP_HWP_Limone/issues/11), [#16 OSS 가치·차별화 판단](https://github.com/skerishKang/33MCP_HWP_Limone/issues/16).
+- **HOLD:** 자동화/변환 대규모 확장, 설치 GUI, 템플릿, 일괄 처리, 변경 비교 기능. 이미 작성한 코드와 이슈는 보존합니다.
+- **Draft PR #2:** 신규 도구는 기본 비활성이고 로컬 테스트·GitHub CI는 통과했지만, 실제 한글 COM 테스트에서 오류가 발생하여 실사용 검증 미완료입니다. Ready/merge/release하지 않습니다.
+- **의사결정:** 실제 사용자와 대체 도구 비교 후 INVEST(계속 개발) / MAINTAIN(필수 유지보수) / PIVOT(다른 기술·OSS 기여에 집중)을 근거 기반으로 선택합니다.
+
+[검증 기준](docs/OSS_FIT_REVIEW.md) · [최신 로드맵](docs/ROADMAP.md) · [이슈 보드](docs/ISSUE_INDEX.md)
+
+> 아래의 33·34·35 통합 구조는 **이전 설계안/조건부 후보**입니다. 확정된 개발 일정이나 완료된 기능으로 보지 마세요.
 
 [Issues](https://github.com/skerishKang/33MCP_HWP_Limone/issues) · [통합 프로젝트 #3](https://github.com/skerishKang/33MCP_HWP_Limone/issues/3) · [개발 로드맵](docs/ROADMAP.md) · [운영 문서](docs/OPERATIONS.md)
 
@@ -20,7 +35,7 @@
 
 **주의:** 기존 README의 '25개 모든 도구 완전 동작', '10배 향상', '초기화 3초 이내' 등 표현은 측정·실기 증거가 없어 검증된 성능으로 취급하지 않습니다. 설치 후 실제 문서로 확인하기 전까지 중요한 고객 자료를 사용하지 마세요.
 
-## 세 가지 모듈로 만드는 하나의 제품
+## 세 가지 모듈의 기존 통합 구상 (현재 HOLD)
 
 ```text
 Claude Desktop / Gemini CLI / 검증된 기타 MCP 클라이언트
@@ -40,7 +55,7 @@ Claude Desktop / Gemini CLI / 검증된 기타 MCP 클라이언트
 - 문단·글꼴·표·이미지 등 HWP COM 조작 기능의 일부
 - Windows에서 `HWPFrame.HwpObject` 사용. **한컴오피스 한글이 설치되어 있어야 합니다.**
 
-### 통합 예정 (구현 완료 아님)
+### 통합 후보 (현재 HOLD · 구현 완료 아님)
 - 34: 여러 동작을 한 작업으로 실행, 중복 실행 방지, 원본 보존, 백업·복구
 - 35: HWP→PDF→HTML / PDF→HTML 변환; 스캔 문서 OCR은 선택 기능
 - 템플릿 기반 공문·보고서·계약서 작성, 여러 문서 일괄 작업, 변경 전후 비교
@@ -77,4 +92,4 @@ Claude Desktop / Gemini CLI / 검증된 기타 MCP 클라이언트
 
 ---
 
-**English quick summary:** This repository currently contains a Windows COM-based MCP server for Hancom Hangul. The unification of local document editing (33), workflow automation (34), and conversion (35) is a **roadmap, not a shipped release**. Windows end-to-end compatibility, source licensing and packaging remain under review. Please see the linked issues and documentation for accurately scoped capabilities.
+**English quick summary:** This repository currently contains a Windows COM-based MCP server for Hancom Hangul. Unifying local editing (33), automation (34), and conversion (35) is a **paused proposal, not a shipped release or mandatory roadmap**. Windows end-to-end compatibility, source licensing and packaging remain under review. Please see the linked issues and documentation for accurately scoped capabilities.
