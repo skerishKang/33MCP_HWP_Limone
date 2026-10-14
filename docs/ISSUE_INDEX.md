@@ -1,5 +1,8 @@
 # Issue board — current priorities (2026-10-15 KST)
 
+> **OWNER PRIORITY — 2026-10-15:** External open-source contribution, review, monitoring and competitor comparisons are prohibited. Execute only our own repository's defect fixes (#1/#5/#11), bounded audit (#4/#10), and internal usability assessment (#16). No continued activity on any external PR. All feature HOLD statuses remain unchanged.
+
+
 **Main decision:** [#16 OSS viability / competitive differentiation](https://github.com/skerishKang/33MCP_HWP_Limone/issues/16). **Product epic:** [#3](https://github.com/skerishKang/33MCP_HWP_Limone/issues/3).
 
 The old table ordered 33+34+35 feature building as an assumed plan. This new board distinguishes **active evidence/repair** from **conditional work on HOLD**.
