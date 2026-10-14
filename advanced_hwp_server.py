@@ -17,9 +17,9 @@ try:
     import win32api
     import win32con
 except ImportError as e:
-    print(f"필수 패키지가 설치되지 않음: {e}")
-    print("다음 명령어로 패키지를 설치하세요:")
-    print("pip install mcp fastmcp pywin32")
+    print(f"필수 패키지가 설치되지 않음: {e}", file=sys.stderr)
+    print("다음 명령어로 패키지를 설치하세요:", file=sys.stderr)
+    print("pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
 # 로깅 설정
@@ -141,29 +141,44 @@ def open_document(file_path: str) -> str:
 
 @mcp.tool()
 def save_document(file_path: Optional[str] = None) -> str:
-    """현재 문서를 저장합니다."""
+    """현재 문서를 저장합니다. 새 문서는 저장할 파일 경로를 지정해야 합니다."""
     try:
         hwp_controller.check_initialization()
-        
+
         if file_path:
-            # 다른 이름으로 저장
-            act = hwp_controller.hwp.CreateAction("FileSaveAs")
-            pset = act.CreateSet()
-            pset.SetItem("filename", file_path)
-            pset.SetItem("format", "HWP")
-            act.Execute(pset)
-            
-            hwp_controller.current_document = file_path
-            logger.info(f"문서 저장 완료: {file_path}")
-            return f"문서를 저장했습니다: {file_path}"
-        else:
-            # 현재 문서 저장
-            hwp_controller.hwp.HAction.Run("FileSave")
-            logger.info("문서 저장 완료")
-            return "문서를 저장했습니다."
-            
+            target = os.path.abspath(os.path.expanduser(file_path))
+            parent = os.path.dirname(target)
+            if not os.path.isdir(parent):
+                return f"문서 저장 실패: 대상 폴더가 존재하지 않습니다: {parent}"
+
+            # 공식 HwpObject COM API의 SaveAs를 사용한다.
+            # 성공 반환값뿐 아니라 디스크의 결과 파일까지 확인한다.
+            result = hwp_controller.hwp.SaveAs(target, "HWP", "")
+            if not result:
+                return f"문서 저장 실패: 한글 SaveAs가 실패를 반환했습니다: {target}"
+            if not os.path.isfile(target) or os.path.getsize(target) == 0:
+                return f"문서 저장 실패: 저장된 파일을 확인할 수 없습니다: {target}"
+
+            hwp_controller.current_document = target
+            logger.info("문서 저장 완료: %s", target)
+            return f"문서를 저장했습니다: {target}"
+
+        if hwp_controller.current_document in (None, "new_document"):
+            return "문서 저장 실패: 새 문서는 file_path에 저장할 .hwp 전체 경로를 지정해주세요."
+
+        result = hwp_controller.hwp.HAction.Run("FileSave")
+        if not result:
+            return "문서 저장 실패: 한글 FileSave가 실패를 반환했습니다."
+
+        target = hwp_controller.current_document
+        if not os.path.isfile(target) or os.path.getsize(target) == 0:
+            return f"문서 저장 실패: 저장된 파일을 확인할 수 없습니다: {target}"
+
+        logger.info("문서 저장 완료: %s", target)
+        return f"문서를 저장했습니다: {target}"
+
     except Exception as e:
-        logger.error(f"문서 저장 실패: {e}")
+        logger.error("문서 저장 실패: %s", e)
         return f"문서 저장 실패: {e}"
 
 @mcp.tool()
@@ -662,11 +677,8 @@ def main():
     try:
         logger.info("Advanced HWP MCP Server 시작")
         
-        # 한글 프로그램 초기화
-        if not hwp_controller.initialize():
-            logger.error("한글 프로그램 초기화 실패")
-            return
-        
+        # 연결만으로 한글을 실행하지 않는다.
+        # 실제 도구가 호출되면 check_initialization()에서 지연 초기화한다.
         # MCP 서버 실행
         mcp.run()
         
