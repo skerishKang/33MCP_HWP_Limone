@@ -1,5 +1,8 @@
 # Source inventory and evidence status
 
+> **STATUS UPDATE — 2026-10-15:** Source mapping is preserved as reference evidence, **not an instruction to import 33/34/35 wholesale**. The priority is external user #1 repair and OSS competitive validation (#16). All proposed import decisions are on HOLD pending an evidence-backed INVEST decision or the owner's explicit scoped priority. See [OSS_FIT_REVIEW](OSS_FIT_REVIEW.md).
+
+
 **Date:** 2026-10-15 KST  
 **Target:** existing public GitHub repository `skerishKang/33MCP_HWP_Limone`. No new repository.  
 **Source folders:** `workdiary/33-MCP_HWP`, `workdiary/34-hwp-automation`, `workdiary/35-hwp-pdf-html`. These are **local inputs**, not automatically part of this public repository.
