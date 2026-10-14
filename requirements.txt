@@ -1,4 +1,4 @@
-mcp>=1.0.0
-fastmcp>=0.1.0
-pywin32>=306
-pythoncom
+# mcp.server.fastmcp.FastMCP is bundled in the MCP Python SDK.
+mcp>=1.0.0,<2.0.0
+# pywin32 provides win32com, pythoncom, win32api and win32con.
+pywin32>=306; sys_platform == "win32"
