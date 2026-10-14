@@ -1,5 +1,8 @@
 # Advanced HWP MCP roadmap — evidence-first reset (2026-10-15 KST)
 
+> **OWNER SCOPE OVERRIDE — 2026-10-15:** Work ONLY on `skerishKang/33MCP_HWP_Limone`. No external OSS work, upstream PRs, forks, outside repo reviews, comments, follow-ups or monitoring. Existing outside actions are historical and must not trigger new work. Prioritise our issue #1/#5 startup/save repair and #11 Windows COM failure. Issue #16 is internal product readiness; competitor benchmarking and outside contribution are no longer required. See `AGENTS.md`.
+ 
+
 > **Current priority: determine whether continued HWP development creates distinctive OSS value.** The earlier plan to integrate local workdiary 33+34+35 is a hypothesis, **not an approved unconditional build order**.
 >
 > [Evidence and decision rules](OSS_FIT_REVIEW.md) · [Epic #3](https://github.com/skerishKang/33MCP_HWP_Limone/issues/3) · [OSS viability #16](https://github.com/skerishKang/33MCP_HWP_Limone/issues/16)
