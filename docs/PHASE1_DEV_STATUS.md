@@ -9,14 +9,16 @@
 1. **Source-preserving HWP text batch** (`hwp_unified/workflow.py`): job-owned `DispatchEx` session, validated inputs, bounded replacement dictionary, original file never overwritten, exclusive output publication, pre/post text read-back; no arbitrary commands or table stubs.
 2. **PDF native text → HTML** (`hwp_unified/conversion.py`): uses optional PyMuPDF, escapes content, editable / approximate-position modes, refuses output overwrite, reports missing native PDF text instead of claiming OCR.
 3. **HWP → PDF → native text HTML** (`hwp_unified/conversion.py`): isolated HWP COM export to verified PDF, optional PyMuPDF extraction, transient PDF deletion, no input-file modification. **Not yet live-validated**.
-4. Three MCP tool wrappers (`replace_document_text`, `convert_pdf_to_html`, `convert_hwp_to_html`) registered **only** when `HWP_MCP_ENABLE_EXPERIMENTAL=1`; they do not change default tool discovery.
-5. Optional dependencies through `requirements-convert.txt`; explicit `scripts/windows_hwp_smoke.py --run` synthetic E2E runner (never in CI).
+4. **HWP crash isolation** (`hwp_unified/worker.py`): experimental HWP operations execute in a dedicated Python subprocess with bounded JSON request/response and 90-second timeout. If Windows COM crashes, the tool reports failure instead of taking down the MCP host. This isolates crashes; it does not solve the underlying COM fault or guarantee orphan-process cleanup.
+5. Three MCP tool wrappers (`replace_document_text`, `convert_pdf_to_html`, `convert_hwp_to_html`) registered **only** when `HWP_MCP_ENABLE_EXPERIMENTAL=1`; they do not change default tool discovery.
+6. Optional dependencies through `requirements-convert.txt`; explicit `scripts/windows_hwp_smoke.py --run` synthetic E2E runner (never in CI).
 
 ## Tests and real-world results
 
-- **19/19 local unittest** cases passed (7 earlier mocked server contracts + 10 new targeted workflow/PDF tests). PyMuPDF 1.26.4 was installed on the development PC, so actual synthetic PDF render/HTML escaping passed.
+- **24/24 local unittest** cases passed (7 earlier mocked server contracts + 10 new targeted workflow/PDF tests). PyMuPDF 1.26.4 was installed on the development PC, so actual synthetic PDF render/HTML escaping passed.
 - GitHub CI uses Python 3.10–3.12 and mock tests; optional PyMuPDF tests skip if not installed. CI does not prove HWP COM or actual HWP output.
 - Windows dev PC: pywin32 306 installed and `HWPFrame.HwpObject` COM registration exists. Added explicit environment-gating tests (experimental tools disabled by default, available only with opt-in).
+- Application Event Log confirmed Python's faulting module was **combase.dll** with exception `0xC0000005` on the observed crashes; root cause remains under investigation.
 - **REAL_WINDOWS_PASS = NO**. Initial synthetic run reached HWP workflow but failed with `WinError 267` involving its pending output path. Subsequent synthetic COM runs were unstable, including a process exit code `-1073741819` (Windows access violation, `0xC0000005`). Pending HWP/PDF output filenames were changed from dot-prefixed to ordinary temporary basenames as a precaution; **that change has not had a successful Windows retest**. No successful create→replace→reopen→convert evidence obtained.
 - Do **not** turn experimental HWP tools on by default or claim that the failed Windows smoke is resolved. Further diagnosis should use a dedicated HWP test environment, event logs, bitness/HWP COM compatibility and isolated minimal script; avoid repeatedly launching HWP on a working user desktop.
 

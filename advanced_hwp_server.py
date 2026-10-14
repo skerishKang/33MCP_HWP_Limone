@@ -681,9 +681,12 @@ def replace_document_text(
     Windows/한글 실사용 검증은 별도 진행 중입니다.
     """
     try:
-        from hwp_unified.workflow import run_replace_job
+        from hwp_unified.worker import invoke_hwp_worker
 
-        result = run_replace_job(input_path, output_path, replacements)
+        result = invoke_hwp_worker(
+            "replace", source=input_path, destination=output_path,
+            replacements=replacements
+        )
         return f"새 HWP 파일을 저장했습니다: {result} (문서 내용 실기 재확인 권장)"
     except Exception as exc:
         logger.error("HWP 일괄 치환 실패: %s", exc)
@@ -715,9 +718,11 @@ def convert_hwp_to_html(
     Windows/한글/PyMuPDF 필요. 원본 보존·출력 덮어쓰기 금지.
     """
     try:
-        from hwp_unified.conversion import hwp_to_html
+        from hwp_unified.worker import invoke_hwp_worker
 
-        result = hwp_to_html(hwp_path, output_dir, mode)
+        result = invoke_hwp_worker(
+            "hwp_to_html", source=hwp_path, output_dir=output_dir, mode=mode
+        )
         return f"HWP 텍스트 HTML 생성 완료: {result} (실제 HWP/레이아웃 재검증 필요)"
     except Exception as exc:
         logger.error("HWP→HTML 변환 실패: %s", exc)

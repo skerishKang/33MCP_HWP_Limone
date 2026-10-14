@@ -53,7 +53,7 @@ Claude Desktop / Gemini CLI / 검증된 기타 MCP 클라이언트
 - `convert_pdf_to_html(pdf_path, output_dir, mode="editable")`: 텍스트 기반 PDF에서 실제 텍스트를 추출해 HTML 작성. 합성 PDF로 성공 확인. `mode`는 `editable` 또는 `faithful`(대략적인 배치)입니다. OCR·표/이미지·폰트의 정밀 보존은 불가합니다.
 - `convert_hwp_to_html(hwp_path, output_dir, mode="editable")`: HWP→PDF→HTML 변환 경로. **HWP COM 실기 검증 실패/미완료**, 현재는 모의 COM 경로만 테스트했습니다.
 
-위 세 도구는 **`HWP_MCP_ENABLE_EXPERIMENTAL=1`을 명시적으로 설정한 경우에만 MCP 도구 목록에 등록**됩니다. 기본 설치로는 노출되지 않습니다. 새 HWP 기능의 실험은 별도 테스트 PC에서만 권장합니다.
+위 세 도구는 **`HWP_MCP_ENABLE_EXPERIMENTAL=1`을 명시적으로 설정한 경우에만 MCP 도구 목록에 등록**됩니다. 기본 설치로는 노출되지 않습니다. 새로운 HWP COM 작업은 별도 Python 작업 프로세스에서 실행해 충돌이 발생해도 MCP 서버가 종료되지 않도록 격리합니다. **COM 오류 자체가 해결된 것은 아니므로**, 새 HWP 기능의 실험은 별도 테스트 PC에서만 권장합니다.
 
 PDF 추출 라이브러리는 선택 설치합니다.
 
