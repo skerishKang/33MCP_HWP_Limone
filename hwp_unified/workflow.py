@@ -80,7 +80,7 @@ def run_replace_job(
     src, out = validate_job(source, destination, replacements)
     # Same-directory temp enables atomic hard-link publish without overwriting.
     descriptor, pending = tempfile.mkstemp(
-        prefix=".hwp-mcp-", suffix=".hwp", dir=str(out.parent)
+        prefix="hwp_mcp_", suffix=".hwp", dir=str(out.parent)
     )
     os.close(descriptor)
     os.unlink(pending)

@@ -3,6 +3,7 @@
 Fake modules are used deliberately: these tests do NOT prove real Windows/HWP integration.
 """
 import importlib.util
+import os
 import pathlib
 import sys
 import tempfile
@@ -16,9 +17,13 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 class FakeFastMCP:
     def __init__(self, name):
         self.name = name
+        self.registered_tools = []
 
     def tool(self):
-        return lambda function: function
+        def register(function):
+            self.registered_tools.append(function.__name__)
+            return function
+        return register
 
     def run(self):
         return None
@@ -73,6 +78,21 @@ class ServerContractTests(unittest.TestCase):
         )
         self.init_guard.start()
         self.addCleanup(self.init_guard.stop)
+
+    def test_experimental_mcp_tools_are_off_by_default(self):
+        with mock.patch.dict(os.environ, {"HWP_MCP_ENABLE_EXPERIMENTAL": "0"}):
+            server, _ = load_server()
+        self.assertNotIn("replace_document_text", server.mcp.registered_tools)
+        self.assertNotIn("convert_pdf_to_html", server.mcp.registered_tools)
+        self.assertNotIn("convert_hwp_to_html", server.mcp.registered_tools)
+        self.assertIn("save_document", server.mcp.registered_tools)
+
+    def test_experimental_mcp_tools_require_explicit_opt_in(self):
+        with mock.patch.dict(os.environ, {"HWP_MCP_ENABLE_EXPERIMENTAL": "1"}):
+            server, _ = load_server()
+        self.assertIn("replace_document_text", server.mcp.registered_tools)
+        self.assertIn("convert_pdf_to_html", server.mcp.registered_tools)
+        self.assertIn("convert_hwp_to_html", server.mcp.registered_tools)
 
     def test_launching_mcp_does_not_launch_hwp(self):
         with mock.patch.object(self.controller, "initialize", side_effect=AssertionError(

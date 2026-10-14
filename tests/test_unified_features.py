@@ -94,7 +94,7 @@ class WorkflowTests(unittest.TestCase):
             run_replace_job(str(self.src), str(self.dst), {"old": "new"},
                             lambda: fake_session(FakeHwp(save_result=False)))
         self.assertFalse(self.dst.exists())
-        self.assertFalse(list(self.root.glob(".hwp-mcp-*")))
+        self.assertFalse(list(self.root.glob("hwp_mcp_*")))
 
     def test_failed_replace_leaves_source_and_output_unchanged(self):
         with self.assertRaisesRegex(HwpWorkflowError, "replacement"):
@@ -172,7 +172,7 @@ class NativePdfTests(unittest.TestCase):
             result = hwp_to_html(str(source), str(self.root))
         self.assertEqual(pathlib.Path(result).name, "sample.editable.html")
         self.assertIn("Hello", pathlib.Path(result).read_text(encoding="utf-8"))
-        self.assertFalse(list(self.root.glob(".hwp-convert-*")))
+        self.assertFalse(list(self.root.glob("hwp_convert_*")))
 
 
 if __name__ == "__main__":

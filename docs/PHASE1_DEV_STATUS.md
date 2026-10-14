@@ -14,10 +14,10 @@
 
 ## Tests and real-world results
 
-- **17/17 local unittest** cases passed (7 earlier mocked server contracts + 10 new targeted workflow/PDF tests). PyMuPDF 1.26.4 was installed on the development PC, so actual synthetic PDF render/HTML escaping passed.
+- **19/19 local unittest** cases passed (7 earlier mocked server contracts + 10 new targeted workflow/PDF tests). PyMuPDF 1.26.4 was installed on the development PC, so actual synthetic PDF render/HTML escaping passed.
 - GitHub CI uses Python 3.10–3.12 and mock tests; optional PyMuPDF tests skip if not installed. CI does not prove HWP COM or actual HWP output.
-- Windows dev PC: pywin32 306 installed and `HWPFrame.HwpObject` COM registration exists.
-- **REAL_WINDOWS_PASS = NO**. Initial synthetic run reached HWP workflow but failed with `WinError 267` involving its pending output path. Subsequent synthetic COM runs were unstable, including a process exit code `-1073741819` (Windows access violation, `0xC0000005`). No successful create→replace→reopen→convert evidence obtained.
+- Windows dev PC: pywin32 306 installed and `HWPFrame.HwpObject` COM registration exists. Added explicit environment-gating tests (experimental tools disabled by default, available only with opt-in).
+- **REAL_WINDOWS_PASS = NO**. Initial synthetic run reached HWP workflow but failed with `WinError 267` involving its pending output path. Subsequent synthetic COM runs were unstable, including a process exit code `-1073741819` (Windows access violation, `0xC0000005`). Pending HWP/PDF output filenames were changed from dot-prefixed to ordinary temporary basenames as a precaution; **that change has not had a successful Windows retest**. No successful create→replace→reopen→convert evidence obtained.
 - Do **not** turn experimental HWP tools on by default or claim that the failed Windows smoke is resolved. Further diagnosis should use a dedicated HWP test environment, event logs, bitness/HWP COM compatibility and isolated minimal script; avoid repeatedly launching HWP on a working user desktop.
 
 ## Explicitly not done

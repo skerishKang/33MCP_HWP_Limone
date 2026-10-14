@@ -107,7 +107,7 @@ def hwp_to_html(source: str, output_dir: str, mode: str = "editable") -> str:
         raise ConversionError("mode must be editable or faithful")
     if (dest / f"{src.stem}.{mode}.html").exists():
         raise ConversionError("HTML output already exists; no overwrite")
-    fd, tmp = tempfile.mkstemp(prefix=".hwp-convert-", suffix=".pdf", dir=str(dest))
+    fd, tmp = tempfile.mkstemp(prefix="hwp_convert_", suffix=".pdf", dir=str(dest))
     os.close(fd)
     os.unlink(tmp)
     try:
