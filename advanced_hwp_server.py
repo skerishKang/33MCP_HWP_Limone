@@ -22,14 +22,12 @@ except ImportError as e:
     print("pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
-# 로깅 설정
+# MCP stdio is a protocol channel: diagnostics go to stderr only.
+# Never create a log file in the client's arbitrary working directory on import.
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('hwp_mcp.log'),
-        logging.StreamHandler()
-    ]
+    stream=sys.stderr,
 )
 logger = logging.getLogger(__name__)
 
@@ -105,8 +103,9 @@ def create_document() -> str:
     try:
         hwp_controller.check_initialization()
         
-        # 새 문서 생성
-        hwp_controller.hwp.HAction.Run("FileNew")
+        # COM returns False on failure; do not report a new document otherwise.
+        if not hwp_controller.hwp.HAction.Run("FileNew"):
+            return "문서 생성 실패: 한글 FileNew 명령이 실패했습니다."
         hwp_controller.current_document = "new_document"
         
         logger.info("새 문서 생성 완료")
@@ -120,17 +119,18 @@ def create_document() -> str:
 def open_document(file_path: str) -> str:
     """지정된 경로의 한글 문서를 엽니다."""
     try:
-        hwp_controller.check_initialization()
-        
-        if not os.path.exists(file_path):
+        # Reject missing/unreadable paths before launching Hangul.
+        if not os.path.isfile(file_path):
             return f"파일을 찾을 수 없습니다: {file_path}"
-        
-        # 문서 열기
+        hwp_controller.check_initialization()
+
+        # A successful Execute return is required before claiming an open.
         act = hwp_controller.hwp.CreateAction("FileOpen")
         pset = act.CreateSet()
         pset.SetItem("filename", file_path)
-        act.Execute(pset)
-        
+        if not act.Execute(pset):
+            return f"문서 열기 실패: 한글 FileOpen 명령이 실패했습니다: {file_path}"
+
         hwp_controller.current_document = file_path
         logger.info(f"문서 열기 완료: {file_path}")
         return f"문서를 열었습니다: {file_path}"

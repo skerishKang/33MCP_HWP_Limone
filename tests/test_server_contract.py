@@ -94,6 +94,48 @@ class ServerContractTests(unittest.TestCase):
         self.assertIn("convert_pdf_to_html", server.mcp.registered_tools)
         self.assertIn("convert_hwp_to_html", server.mcp.registered_tools)
 
+    def test_import_does_not_open_log_file_in_unwritable_client_directory(self):
+        # MCP clients may launch the script with an arbitrary working directory.
+        # Import must not attempt to create a default log file.
+        with mock.patch("logging.FileHandler",
+                        side_effect=AssertionError("unexpected disk log")):
+            server, _ = load_server()
+        self.assertIsNotNone(server.mcp)
+
+    def test_create_failure_must_not_claim_success(self):
+        self.controller.hwp.HAction.Run.return_value = False
+        message = self.server.create_document()
+        self.assertIn("실패", message)
+        self.assertEqual(self.controller.current_document, "new_document")
+
+    def test_nonexistent_file_does_not_initialize_hwp(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = str(pathlib.Path(directory) / "absent.hwp")
+            with mock.patch.object(
+                self.controller, "check_initialization",
+                side_effect=AssertionError("do not launch Hangul for missing file"),
+            ):
+                message = self.server.open_document(missing)
+        self.assertIn("파일을 찾을 수 없습니다", message)
+
+    def test_file_open_false_must_not_claim_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = pathlib.Path(directory) / "synthetic.hwp"
+            source.write_bytes(b"synthetic for mocked contract")
+            self.controller.hwp.CreateAction.return_value.Execute.return_value = False
+            message = self.server.open_document(str(source))
+        self.assertIn("실패", message)
+        self.assertEqual(self.controller.current_document, "new_document")
+
+    def test_file_open_success_updates_current_document(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = pathlib.Path(directory) / "synthetic.hwp"
+            source.write_bytes(b"synthetic for mocked contract")
+            self.controller.hwp.CreateAction.return_value.Execute.return_value = True
+            message = self.server.open_document(str(source))
+            self.assertIn("열었습니다", message)
+            self.assertEqual(self.controller.current_document, str(source))
+
     def test_launching_mcp_does_not_launch_hwp(self):
         with mock.patch.object(self.controller, "initialize", side_effect=AssertionError(
             "HWP was initialized at MCP startup"
