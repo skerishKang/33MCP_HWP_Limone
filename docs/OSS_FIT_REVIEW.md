@@ -1,5 +1,8 @@
 # OSS viability review — evidence before feature expansion
 
+> **OWNER DIRECTIVE — 2026-10-15:** The earlier competitor-review/upstream-contribution tasks in this document are **superseded and not actionable**. Do not inspect, modify, comment on, monitor, or contribute to external repositories. The sole permitted development target is our own `skerishKang/33MCP_HWP_Limone`, including issue #1 reports inside this repository and our own local source. Re-evaluate investment from reproducible **internal** installation, SaveAs/reopen, COM stability, and maintainer readiness evidence. All historical competitor references below remain context only; do not treat them as assignments.
+
+
 **Decision date:** 2026-10-15 KST
 **Scope:** this existing public HWP MCP repository. Broader confidential/undisclosed project comparisons must remain outside this public repository.
 
