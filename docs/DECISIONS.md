@@ -1,5 +1,19 @@
 # Architecture decisions and open owner choices
 
+## ADR-007 — Evidence-first OSS viability supersedes mandatory merger (2026-10-15)
+
+**Status: ACTIVE / supersedes only the mandatory-build interpretation of ADR-001/002/003.**
+
+- Maintain the **existing** `skerishKang/33MCP_HWP_Limone` public repository. No new repo is needed.
+- Local 33+34+35 consolidation is now **conditional**, not a committed next build sequence.
+- Focus on external issue #1, real Windows HWP COM crash, and user/alternative comparison (#5/#11/#16). Retain Draft PR #2 and its default-OFF experimental tools; do not merge without real-world acceptance.
+- Pause features #6–#9 and #12–#15 until a source-backed INVEST decision or explicit owner reprioritization.
+- Possible outcomes are INVEST / MAINTAIN / PIVOT; lack of OSS advantage is a valid conclusion.
+- OSS grant selection is not a shipping requirement. Other private project candidates and contribution strategies belong in nonpublic planning, not this public repo.
+- All previous decisions concerning real Windows validation, provenance, privacy, license owner approval, and default compatibility remain in force.
+
+The earlier ADR-001 sentence "integrate local 33/34/35" is a **historical proposal**, not current authorization to start a code merge. See [OSS_FIT_REVIEW.md](OSS_FIT_REVIEW.md).
+
 ## ADR-001 — Preserve existing GitHub repository
 **Decision:** integrate local 33/34/35 into `skerishKang/33MCP_HWP_Limone`. Do **not** create another repo.
 **Reason:** existing users, stars, issue #1, source history and MCP entrypoint should continue to work.

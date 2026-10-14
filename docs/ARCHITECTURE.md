@@ -1,5 +1,8 @@
 # Unified Advanced HWP MCP — Proposed architecture
 
+> **HOLD / historical design proposal (2026-10-15).** The 33/34/35 modular expansion described below is not an active implementation mandate. Maintain the existing single MCP entry point and investigate external issue #1 and native COM failures first. Resume only after the evidence-based [OSS suitability decision](OSS_FIT_REVIEW.md) in issue #16, or an explicit maintainer priority decision.
+
+
 **Status: PROPOSED (not an implementation claim).** Keep the same GitHub repository and the existing MCP server entry point.
 
 ```text

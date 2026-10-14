@@ -1,41 +1,47 @@
-# Unified HWP MCP roadmap — 2026-10-15
+# Advanced HWP MCP roadmap — evidence-first reset (2026-10-15 KST)
 
-**Single repository:** `skerishKang/33MCP_HWP_Limone`  
-**Principle:** one user-facing HWP MCP tool, multiple independently testable components. The three local folders are **source references**; not yet merged.
+> **Current priority: determine whether continued HWP development creates distinctive OSS value.** The earlier plan to integrate local workdiary 33+34+35 is a hypothesis, **not an approved unconditional build order**.
+>
+> [Evidence and decision rules](OSS_FIT_REVIEW.md) · [Epic #3](https://github.com/skerishKang/33MCP_HWP_Limone/issues/3) · [OSS viability #16](https://github.com/skerishKang/33MCP_HWP_Limone/issues/16)
 
-## Phase 0 — evidence, user bug and public readiness (P0)
-- [ ] [#4](https://github.com/skerishKang/33MCP_HWP_Limone/issues/4) inventory, source/third-party license audit, compare current GitHub vs local 33 / PR #2.
-- [ ] [#5](https://github.com/skerishKang/33MCP_HWP_Limone/issues/5) resolve external user [#1](https://github.com/skerishKang/33MCP_HWP_Limone/issues/1); avoid duplicating [Draft PR #2](https://github.com/skerishKang/33MCP_HWP_Limone/pull/2).
-- [ ] [#6](https://github.com/skerishKang/33MCP_HWP_Limone/issues/6) agree common COM, file safety and module boundaries.
-- [ ] [#10](https://github.com/skerishKang/33MCP_HWP_Limone/issues/10) public source/secret/license audit (owner sign-off before LICENSE change).
-- [ ] [#11](https://github.com/skerishKang/33MCP_HWP_Limone/issues/11) HWP Windows smoke and distinct mock suite.
+## NOW — preserve users, determine value
 
-**Exit:** no claim of real Windows save success without create→save→reopen proof; no automatic application start; source copies inventoried.
+- [ ] [#5](https://github.com/skerishKang/33MCP_HWP_Limone/issues/5) Fix external [#1](https://github.com/skerishKang/33MCP_HWP_Limone/issues/1): no unrequested HWP launch, real save/reopen; don't close without actual evidence.
+- [ ] [#11](https://github.com/skerishKang/33MCP_HWP_Limone/issues/11) Investigate the Windows COM failure and confirm any fix using synthetic documents in a suitable test environment. The observed `combase.dll` crash is not fixed by adding a subprocess.
+- [ ] [#16](https://github.com/skerishKang/33MCP_HWP_Limone/issues/16) Compare with established alternatives, seek genuine user needs, test ONE concrete differentiator and decide INVEST / MAINTAIN / PIVOT.
+- [ ] [#4](https://github.com/skerishKang/33MCP_HWP_Limone/issues/4) Identify needed local source/provenance only for relevant fixes.
+- [ ] [#10](https://github.com/skerishKang/33MCP_HWP_Limone/issues/10) Rights/secrets/license audit before any new publication or public code import.
 
-## Phase 1 — integrate verified functionality (P1)
-- [ ] [#7](https://github.com/skerishKang/33MCP_HWP_Limone/issues/7) workflow engine, robust table editing and rollback.
-- [ ] [#8](https://github.com/skerishKang/33MCP_HWP_Limone/issues/8) real HWP/PDF/HTML conversion & real accuracy measurement.
-- [ ] [#9](https://github.com/skerishKang/33MCP_HWP_Limone/issues/9) backwards-compatible package with optional conversion extras.
-- [ ] [#12](https://github.com/skerishKang/33MCP_HWP_Limone/issues/12) portable Windows setup/GUI.
-- [ ] [#16](https://github.com/skerishKang/33MCP_HWP_Limone/issues/16) version, community and Codex for OSS preparation.
+**Existing asset:** [Draft PR #2](https://github.com/skerishKang/33MCP_HWP_Limone/pull/2), HEAD `da39919`: lazy-init/save improvements + opt-in experimental text workflow and PDF conversion. Locally 24/24 tests and exact-head GitHub CI passed; **real Windows HWP acceptance did not pass**. Preserve; no Ready/merge/release. Experimental tools default OFF.
 
-**Exit:** reproducible fresh-machine install, baseline MCP interface preserved, failures truthful, public release only after actual Windows acceptance.
+## HOLD — new architecture/features, not abandoned
 
-## Phase 2 — user-facing differentiation (P2)
-- [ ] [#13](https://github.com/skerishKang/33MCP_HWP_Limone/issues/13) HWP official report/contract templates.
-- [ ] [#14](https://github.com/skerishKang/33MCP_HWP_Limone/issues/14) batch jobs, progress, cancellation and recovery.
-- [ ] [#15](https://github.com/skerishKang/33MCP_HWP_Limone/issues/15) before/after document diff report.
+The following remain visible for future reuse, but an agent must **not pick one merely because it is numbered or appears next in a roadmap**:
 
-## Uncommitted ideas (not feature-complete)
-- HWPX native parsing and mixed HWP/HWPX workflow
-- Interactive preview and user-approved destructive edits
-- OCR for scanned PDF and confidence reporting
-- English quickstart / examples, public demo with synthetic documents
-- General purpose plugin API for new document backends
+- [#6](https://github.com/skerishKang/33MCP_HWP_Limone/issues/6) COM/common architecture expansion
+- [#7](https://github.com/skerishKang/33MCP_HWP_Limone/issues/7) 34 workflow, table editing, rollback
+- [#8](https://github.com/skerishKang/33MCP_HWP_Limone/issues/8) 35 conversion pipeline and accuracy work
+- [#9](https://github.com/skerishKang/33MCP_HWP_Limone/issues/9) Unified packaging
+- [#12](https://github.com/skerishKang/33MCP_HWP_Limone/issues/12) Installer/GUI enhancements
+- [#13](https://github.com/skerishKang/33MCP_HWP_Limone/issues/13) Templates
+- [#14](https://github.com/skerishKang/33MCP_HWP_Limone/issues/14) Batch processing
+- [#15](https://github.com/skerishKang/33MCP_HWP_Limone/issues/15) Before/after diff
 
-**Decision rule:** add dedicated issues only after a distinct use case and expected behavior are clear; avoid scope creep before Phase 0.
+Resume only a specifically justified subset if [#16](https://github.com/skerishKang/33MCP_HWP_Limone/issues/16) records a source-backed INVEST decision or the owner explicitly prioritizes a discrete user issue.
 
-## Ownership, priority and reporting
-- The repository owner decides license and nonpublic material release; ordinary documentation/tests/PR preparation do not require repeated owner sign-offs.
-- Define `DONE` only with explicit result+evidence; `MOCK_ONLY`, `NOT_RUN`, `FAILED`, `BLOCKED` are valid statuses.
-- Do not merge, tag, push a release or close an external bug merely because CI is green.
+## Release and submission
+
+- No official release while known install/save problems or Windows acceptance failures remain.
+- Do not claim a simulated accuracy figure or a mocked COM test proves native HWP fidelity.
+- An OSS application must accurately demonstrate maintainer work, quality and actual adoption; acceptance is not promised.
+- Licensing/rights/public scope remain the owner's decision. No automatic new repo, bundled private app, LICENSE change, or source disclosure.
+
+## Operating rule for agents
+
+1. Read [AGENTS](../AGENTS.md), this roadmap and [OSS_FIT_REVIEW](OSS_FIT_REVIEW.md).
+2. Check exact GitHub state, real failures, issue owner and currently active PRs.
+3. Prefer one proven bug fix or one discriminating experiment; avoid feature-count races.
+4. Report what was tested (mock/static/real), the actual reason for failure and next possible fix.
+5. Keep HOLD issues open for traceability; do not auto-merge Draft PR #2.
+
+This replaces the prior mandatory Phase 0→1→2 build train without erasing its design history.

@@ -1,5 +1,8 @@
 # Versioning and public release process
 
+> **RELEASE HOLD — 2026-10-15:** The existence of a release checklist is not authorization to publish or merge Draft PR #2. Before any release, actual Windows HWP save/reopen evidence, public code provenance/licensing and an explicit #16 INVEST/MAINTAIN decision are necessary. See [OSS_FIT_REVIEW](OSS_FIT_REVIEW.md).
+
+
 **Current:** no new release is approved by this document. Existing GitHub branch `main` has old source, and Draft PR #2 is unmerged.
 
 ## Release types

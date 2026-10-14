@@ -2,10 +2,24 @@
 
 > Read at the start of each agent session in this repository. Also read `README.md`, `docs/ROADMAP.md`, `docs/PROJECT_INVENTORY.md`, and the active GitHub issue. These instructions guide contributors; they are not a guarantee that every AI tool automatically loads the file. Check the actual agent's startup convention.
 
+## CURRENT PRIORITY OVERRIDE — 2026-10-15
+
+The earlier instruction to "deliver one user-facing MCP server with full 33/34/35 integration" is **superseded as an unconditional implementation goal**.
+
+**Current goal:** maintain existing users and determine whether this repository has a demonstrable, differentiated open-source use case. Read `docs/OSS_FIT_REVIEW.md` and current issue #16 before creating any new feature.
+
+**Allowed without new scope:** investigate/fix external #1 and narrow COM failure (#5/#11); assess genuine demand, alternatives and differentiation (#16); scoped source/security/license audit (#4/#10); improve factual documentation and focused tests.
+
+**On HOLD unless owner specifically reprioritizes or issue #16 records evidence-backed INVEST:** #6–#9 and #12–#15. Do not start large local 33+34+35 copying, table/GUI/batch/format feature work merely because the old roadmap describes it.
+
+**Preserve:** existing `main`, users, local source folders, Draft PR #2 (experimental tools OFF by default), no release/merge/license change from this replan. A successful mocked CI does not cure observed `combase.dll` `0xC0000005` native crash.
+
+**If evidence shows no worthwhile advantage, report MAINTAIN or PIVOT rather than manufacturing more features to increase OSS application odds.** Keep comparisons with other unpublished local projects in a nonpublic document; do not upload names or private code into this public repo.
+
 ## Mission and authority
 - **One existing repository:** `skerishKang/33MCP_HWP_Limone`. Do **not** create a replacement repository.
 - Reuse the best verified portions of local workdiary folders `33-MCP_HWP`, `34-hwp-automation`, `35-hwp-pdf-html`.
-- Deliver one user-facing MCP server with modular document control, workflow automation, and file conversion. Keep old users working.
+- Preserve one backwards-compatible MCP entry point and existing users; any modular 33/34/35 integration is **conditional** on the evidence-first decision in #16.
 - Owner decides new business strategy, licensing, public/private scope and substantial disclosure. Routine technical work, documentation and Draft PRs are authorized in assigned scope.
 - Do not delete original local projects, force-push, overwrite protected history, create production releases or silently change repository visibility.
 - **Current special case:** Draft PR #2 already handles lazy startup, save truthfulness, installation guide and mock CI. Compare/coordinate rather than duplicate or merge it unverified.
@@ -57,6 +71,7 @@
 - Preserve Korean public documentation; add concise English quickstart as the international OSS audience grows.
 
 ## Documentation map
+- `docs/OSS_FIT_REVIEW.md`: current priority override and INVEST/MAINTAIN/PIVOT decision
 - `docs/PROJECT_INVENTORY.md`: source provenance and gaps
 - `docs/ARCHITECTURE.md`: proposed module boundaries
 - `docs/ROADMAP.md`: issue sequence and acceptance milestones
