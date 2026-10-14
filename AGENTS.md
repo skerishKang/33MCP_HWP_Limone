@@ -1,5 +1,16 @@
 # AGENTS.md — Advanced HWP MCP working instructions
 
+## OWNER DIRECTIVE — ONLY OUR HWP REPOSITORY (2026-10-15, highest priority)
+
+**All work must stay inside `skerishKang/33MCP_HWP_Limone` and the corresponding authorized local 33/34/35 source or isolated test workspace.** This owner directive supersedes previous suggestions to contribute to, monitor, compare, fork, review, or contact outside open-source repositories.
+
+- **PROHIBITED:** any new external repository PR, issue, comment, fork, push, code change, review response, CI check, or monitoring. Do not continue responding to the already-submitted external PR #23. Do not automatically switch to other candidates/upstream work.
+- **ALLOWED:** maintain and test our own code; respond to user reports within **our own** repository, including issue #1; implement bug fixes in our own isolated branches; use only synthetic test files and our own local source after rights review.
+- Prioritise #5 and #11: no unexpected HWP launch, real SaveAs failures and Windows COM crash root-cause investigation. Treat real HWP COM acceptance as NOT_PROVEN until confirmed.
+- Keep Draft PR #2 / experimental features default OFF; do not auto-merge without verified acceptance. The broader 34/35 feature build remains HOLD.
+- #16 is now an **internal maintainability/usability decision**, not a requirement to browse or modify competitors. Existing historical notes and previously completed contributions are preserved, **not ongoing tasks**.
+
+
 > Read at the start of each agent session in this repository. Also read `README.md`, `docs/ROADMAP.md`, `docs/PROJECT_INVENTORY.md`, and the active GitHub issue. These instructions guide contributors; they are not a guarantee that every AI tool automatically loads the file. Check the actual agent's startup convention.
 
 ## CURRENT PRIORITY OVERRIDE — 2026-10-15
