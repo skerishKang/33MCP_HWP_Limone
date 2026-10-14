@@ -1,5 +1,8 @@
 # Advanced HWP MCP — 운영 매뉴얼
 
+> **CURRENT OPERATING PRIORITY — 2026-10-15:** Maintain the existing MCP user path and investigate the actual Windows COM crash (#11); do not enable or deploy experimental HWP workflow tools by default. The wider 33/34/35 merger and GUI/format/batch expansion are on HOLD pending [OSS viability review](OSS_FIT_REVIEW.md). No existing synthetic/mock test is evidence of successful live HWP acceptance.
+
+
 **대상:** 기존 GitHub 저장소 `skerishKang/33MCP_HWP_Limone`. 이 문서는 통합 완료 선언이 아니라 실사용·장애 대응 기준이다.
 
 ## 운영 단계 구분
